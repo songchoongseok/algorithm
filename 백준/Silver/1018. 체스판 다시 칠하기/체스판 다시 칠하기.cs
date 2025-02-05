@@ -10,13 +10,13 @@ var service = new CreateChessBoardService();
 
 Console.WriteLine(service.GetMinDrawCount(chessBoard));
 
-static List<string> InputBoard(int boardSizeY)
+static List<string> InputBoard(int rows)
 {
     var board = new List<string>();
-    while (boardSizeY > 0)
+    while (rows > 0)
     {
         board.Add(Console.ReadLine()!);
-        boardSizeY--;
+        rows--;
     }
 
     return board;
@@ -30,20 +30,23 @@ public class ChessBoard
         _chessBoard = chessBoard;
     }
 
-    public (int Y, int X) GetSize()
+    public (int Rows, int Cols) GetSize()
         => (_chessBoard.Count, _chessBoard[0].Length);
 
-    public List<string>? CutBoardOf(int startY, int startX, int size)
+    public List<string>? CutBoardOf(int startRow, int startCol, int size)
     {
-        if (startX + size > _chessBoard[0].Length || startY + size > _chessBoard.Count)
+        if (startCol + size > _chessBoard[0].Length || startRow + size > _chessBoard.Count)
             return null;
 
         var board = new List<string>();
-        for (int y = startY; y < startY + size; y++)
-            board.Add(_chessBoard[y].Substring(startX, size));
+        for (int row = startRow; row < startRow + size; row++)
+            board.Add(_chessBoard[row].Substring(startCol, size));
 
         return board;
     }
+
+    public List<string> GetBoard()
+        => _chessBoard.ToList();
 }
 
 public class CreateChessBoardService
@@ -55,18 +58,15 @@ public class CreateChessBoardService
         var minDrawCount = Int32.MaxValue;
 
         var size = chessBoard.GetSize();
-        for (int y = 0; y <= size.Y - SIZE; y++)
+        for (int row = 0; row <= size.Rows - SIZE; row++)
         {
-            for (int x = 0; x <= size.X - SIZE; x++)
+            for (int col = 0; col <= size.Cols - SIZE; col++)
             {
-                var board = chessBoard.CutBoardOf(y, x, SIZE);
+                var board = chessBoard.CutBoardOf(row, col, SIZE);
                 if (board is null)
                     continue;
 
-                var drawCount = GetDrawCount(board);
-                minDrawCount = minDrawCount > drawCount
-                    ? drawCount
-                    : minDrawCount;
+                minDrawCount = Math.Min(minDrawCount, GetDrawCount(board));
             }
         }
 
@@ -75,34 +75,28 @@ public class CreateChessBoardService
 
     private int GetDrawCount(List<string> board)
     {
-        var startWhiteColor = 'W';
-        var startBlackColor = 'B';
-
+        var currentColor = 'W';
         var countOfStartWhite = 0;
-        var countOfStartBlack = 0;
-        for (int y = 0; y < SIZE; y++)
+
+        for (int row = 0; row < SIZE; row++)
         {
-            for (int x = 0; x < SIZE; x++)
+            for (int col = 0; col < SIZE; col++)
             {
-                if (board[y][x] != startWhiteColor)
+                if (board[row][col] != currentColor)
                     countOfStartWhite++;
 
-                if (board[y][x] != startBlackColor)
-                    countOfStartBlack++;
-
-                startWhiteColor = ChangeColor(startWhiteColor);
-                startBlackColor = ChangeColor(startBlackColor);
+                currentColor = ChangeColor(currentColor);
             }
 
-            startWhiteColor = ChangeColor(startWhiteColor);
-            startBlackColor = ChangeColor(startBlackColor);
+            currentColor = ChangeColor(currentColor);
         }
 
-        return countOfStartWhite > countOfStartBlack
-                ? countOfStartBlack
-                : countOfStartWhite;
+        return Math.Min(countOfStartWhite, GetCountOfStartBlack(countOfStartWhite));
     }
 
     private char ChangeColor(char color)
         => color == 'W' ? 'B' : 'W';
+
+    private int GetCountOfStartBlack(int countOfStartWhite)
+        => SIZE * SIZE - countOfStartWhite;
 }
